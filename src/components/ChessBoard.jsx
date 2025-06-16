@@ -130,16 +130,6 @@ export default function ChessBoard({ onGameOver }) {
     if (onGameOver) onGameOver();
   };
 
-  const downloadLog = () => {
-    const blob = new Blob([moveLog.join("\n")], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "chess_game_log.txt";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="flex gap-8 items-start justify-center">
@@ -178,15 +168,7 @@ export default function ChessBoard({ onGameOver }) {
       {/* Game Over Dialog */}
       {gameOverDialog && (
         <div className="bg-gray-800 text-white p-6 mt-8 rounded shadow-lg border border-gray-600">
-          <h2 className="text-xl font-bold mb-4">
-            Game Over – {gameResult}
-          </h2>
-          <button
-            onClick={downloadLog}
-            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
-          >
-            📄 Download Move Log
-          </button>
+          <h2 className="text-xl font-bold">Game Over – {gameResult}</h2>
         </div>
       )}
     </div>
