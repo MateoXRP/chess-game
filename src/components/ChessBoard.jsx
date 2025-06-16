@@ -10,7 +10,9 @@ export default function ChessBoard() {
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
   const [moveLog, setMoveLog] = useState([]);
-  const { player } = useGame();
+  const [gameOverDialog, setGameOverDialog] = useState(false);
+  const [gameResult, setGameResult] = useState("");
+  const { player, setPlayer } = useGame();
 
   const makeMove = (move) => {
     const result = game.move(move);
@@ -43,26 +45,40 @@ export default function ChessBoard() {
     setMoveLog([...game.history()]);
   };
 
+  const resetGame = () => {
+    const newGame = new Chess();
+    setGame(newGame);
+    setFen(newGame.fen());
+    setMoveLog([]);
+    setGameOverDialog(false);
+    setGameResult("");
+  };
+
+  const handleSignOut = () => {
+    setPlayer(null); // Just clear local state, don't call Firebase signOut
+  };
+
   useEffect(() => {
     if (game.isGameOver()) {
       const totalMoves = game.history().length;
-      const lastMoveBy = totalMoves % 2 === 0 ? "cpu" : "player"; // Corrected logic
-      const result = lastMoveBy === "player" ? "You win!" : "CPU wins!";
-      alert(`Game Over – ${result}`);
-      saveResult(lastMoveBy === "player" ? "win" : "loss");
+      const lastMoveBy = totalMoves % 2 === 0 ? "cpu" : "player";
+      const outcome = lastMoveBy === "player" ? "win" : "loss";
+      setGameResult(outcome === "win" ? "You Win!" : "You Lose.");
+      saveResult(outcome);
+      setTimeout(() => setGameOverDialog(true), 200);
     }
   }, [fen]);
 
   const saveResult = async (outcome) => {
-    const ref = doc(db, "chess-leaderboard", player.name); // Match rules: name == doc ID
+    const ref = doc(db, "chess-leaderboard", player.name);
     const snap = await getDoc(ref);
     const existing = snap.exists()
       ? snap.data()
       : { name: player.name, wins: 0, losses: 0, games: 0, style: "balanced" };
 
     const updated = {
-      name: player.name, // Must match doc ID
-      style: existing.style || "balanced", // Required field
+      name: player.name,
+      style: existing.style || "balanced",
       games: existing.games + 1,
       wins: existing.wins + (outcome === "win" ? 1 : 0),
       losses: existing.losses + (outcome === "loss" ? 1 : 0),
@@ -71,22 +87,65 @@ export default function ChessBoard() {
     await setDoc(ref, updated, { merge: true });
   };
 
+  const downloadLog = () => {
+    const blob = new Blob([moveLog.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "chess_game_log.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="flex gap-8 items-start justify-center">
-      {/* Chessboard */}
-      <div className="flex justify-center">
-        <Chessboard position={fen} onPieceDrop={onDrop} boardWidth={400} />
+    <div className="flex flex-col items-center justify-center">
+      <div className="flex gap-8 items-start justify-center">
+        {/* Chessboard */}
+        <div className="flex justify-center">
+          <Chessboard position={fen} onPieceDrop={onDrop} boardWidth={400} />
+        </div>
+
+        {/* Move Log */}
+        <div className="bg-gray-700 p-4 rounded w-60 h-[400px] overflow-y-auto">
+          <h2 className="text-lg font-semibold mb-2">Move Log</h2>
+          <ol className="text-sm space-y-1 list-decimal list-inside">
+            {moveLog.map((move, index) => (
+              <li key={index}>{move}</li>
+            ))}
+          </ol>
+        </div>
       </div>
 
-      {/* Move Log */}
-      <div className="bg-gray-700 p-4 rounded w-60 h-[400px] overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-2">Move Log</h2>
-        <ol className="text-sm space-y-1 list-decimal list-inside">
-          {moveLog.map((move, index) => (
-            <li key={index}>{move}</li>
-          ))}
-        </ol>
+      {/* Control Buttons */}
+      <div className="flex gap-4 mt-4">
+        <button
+          onClick={resetGame}
+          className="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded"
+        >
+          ♻️ Reset
+        </button>
+        <button
+          onClick={handleSignOut}
+          className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
+        >
+          🔓 Sign Out
+        </button>
       </div>
+
+      {/* Game Over Dialog */}
+      {gameOverDialog && (
+        <div className="bg-gray-800 text-white p-6 mt-8 rounded shadow-lg border border-gray-600">
+          <h2 className="text-xl font-bold mb-2">Game Over</h2>
+          <p className="text-lg mb-2">{gameResult}</p>
+          <p className="mb-4">You can download your match log below.</p>
+          <button
+            onClick={downloadLog}
+            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+          >
+            📄 Download Move Log
+          </button>
+        </div>
+      )}
     </div>
   );
 }
