@@ -5,6 +5,7 @@ import { Chessboard } from "react-chessboard";
 import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useGame } from "../context/GameContext";
+import { getBestMove } from "../utils/aiMove.js";
 
 export default function ChessBoard({ onGameOver }) {
   const [game, setGame] = useState(new Chess());
@@ -24,7 +25,10 @@ export default function ChessBoard({ onGameOver }) {
     return false;
   };
 
-  const onDrop = (sourceSquare, targetSquare) => {
+  const onDrop = async (sourceSquare, targetSquare) => {
+    // Ensure the player only moves as White
+    if (game.turn() !== "w") return;
+
     const move = {
       from: sourceSquare,
       to: targetSquare,
@@ -32,15 +36,51 @@ export default function ChessBoard({ onGameOver }) {
     };
     const success = makeMove(move);
     if (success) {
-      setTimeout(makeRandomAIMove, 500);
+      setTimeout(makeAIMove, 500);
     }
   };
 
-  const makeRandomAIMove = () => {
-    const possibleMoves = game.moves();
+  const makeAIMove = async () => {
+    if (game.turn() !== "b") return;
+    const possibleMoves = game.moves({ verbose: true });
     if (game.isGameOver() || possibleMoves.length === 0) return;
-    const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-    game.move(randomMove);
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const moveUCI = await getBestMove(game.fen(), player.style || "balanced");
+      const from = moveUCI.slice(0, 2);
+      const to = moveUCI.slice(2, 4);
+      const promotion = moveUCI.length > 4 ? moveUCI[4] : undefined;
+
+      const validMove = possibleMoves.find(
+        (m) => m.from === from && m.to === to && (!m.promotion || m.promotion === promotion)
+      );
+
+      if (!validMove) {
+        console.warn(`Attempt ${attempt}: Invalid AI move: ${moveUCI}`);
+        continue;
+      }
+
+      try {
+        const moveData = { from, to };
+        if (promotion && ['7', '2'].includes(from[1])) {
+          moveData.promotion = promotion;
+        }
+
+        const result = game.move(moveData);
+        if (result) {
+          setFen(game.fen());
+          setMoveLog([...game.history()]);
+          return;
+        }
+      } catch (e) {
+        console.error(`Attempt ${attempt} failed to apply move: ${moveUCI}`, e);
+      }
+    }
+
+    // Final fallback: pick a random legal move
+    const fallback = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+    console.warn("Fallback to random legal move:", fallback.san);
+    game.move(fallback);
     setFen(game.fen());
     setMoveLog([...game.history()]);
   };
