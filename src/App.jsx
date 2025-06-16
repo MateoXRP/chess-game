@@ -13,7 +13,12 @@ export default function App() {
 
   return (
     <div className="h-screen bg-gray-800 text-white p-4">
-      <h1 className="text-2xl mb-4">Welcome, {player.name}!</h1>
+      {/* Top Bar */}
+      <div className="flex justify-between items-center mb-4 px-2">
+        <h1 className="text-xl font-bold">♟️ Chess Game</h1>
+        <span className="text-sm">Player: {player.name}</span>
+      </div>
+
       <ChessBoard onGameOver={() => leaderboardRef.current?.refetch()} />
       <Leaderboard ref={leaderboardRef} />
     </div>
