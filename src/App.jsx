@@ -2,6 +2,7 @@
 import { useGame } from "./context/GameContext";
 import LoginScreen from "./components/LoginScreen";
 import ChessBoard from "./components/ChessBoard";
+import Leaderboard from "./components/Leaderboard";
 
 export default function App() {
   const { player } = useGame();
@@ -19,8 +20,9 @@ export default function App() {
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 justify-center items-center p-4 gap-6">
+      <div className="flex flex-1 flex-col items-center p-4 gap-6 overflow-y-auto">
         <ChessBoard />
+        <Leaderboard />
       </div>
     </div>
   );
