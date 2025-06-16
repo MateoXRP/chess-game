@@ -27,12 +27,7 @@ export default function ChessBoard({ onGameOver }) {
 
   const onDrop = async (sourceSquare, targetSquare) => {
     if (game.turn() !== "w") return;
-
-    const move = {
-      from: sourceSquare,
-      to: targetSquare,
-      promotion: "q",
-    };
+    const move = { from: sourceSquare, to: targetSquare, promotion: "q" };
     const success = makeMove(move);
     if (success) {
       setTimeout(makeAIMove, 500);
@@ -41,12 +36,10 @@ export default function ChessBoard({ onGameOver }) {
 
   const makeAIMove = async () => {
     if (game.turn() !== "b") return;
-
     const possibleMoves = game.moves({ verbose: true });
     if (game.isGameOver() || possibleMoves.length === 0) return;
 
     const legalUCIMoves = possibleMoves.map((m) => m.from + m.to + (m.promotion || ""));
-
     for (let attempt = 1; attempt <= 3; attempt++) {
       const moveUCI = await getBestMove(game.fen(), player.style || "balanced", legalUCIMoves);
       const from = moveUCI.slice(0, 2);
@@ -57,17 +50,13 @@ export default function ChessBoard({ onGameOver }) {
         (m) => m.from === from && m.to === to && (!m.promotion || m.promotion === promotion)
       );
 
-      if (!validMove) {
-        console.warn(`Attempt ${attempt}: Invalid AI move: ${moveUCI}`);
-        continue;
-      }
+      if (!validMove) continue;
 
       try {
         const moveData = { from, to };
         if (promotion && ['7', '2'].includes(from[1])) {
           moveData.promotion = promotion;
         }
-
         const result = game.move(moveData);
         if (result) {
           setFen(game.fen());
@@ -80,7 +69,6 @@ export default function ChessBoard({ onGameOver }) {
     }
 
     const fallback = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-    console.warn("Fallback to random legal move:", fallback.san);
     game.move(fallback);
     setFen(game.fen());
     setMoveLog([...game.history()]);
@@ -126,20 +114,30 @@ export default function ChessBoard({ onGameOver }) {
     };
 
     await setDoc(ref, updated, { merge: true });
-
     if (onGameOver) onGameOver();
+  };
+
+  const downloadLog = () => {
+    const blob = new Blob([moveLog.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "chess_game_log.txt";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
     <div className="flex flex-col items-center justify-center">
-      <div className="flex gap-8 items-start justify-center">
+      {/* Chessboard + Move Log Layout */}
+      <div className="flex flex-col md:flex-row md:gap-8 items-center justify-center">
         {/* Chessboard */}
         <div className="flex justify-center">
-          <Chessboard position={fen} onPieceDrop={onDrop} boardWidth={400} />
+          <Chessboard position={fen} onPieceDrop={onDrop} boardWidth={Math.min(400, window.innerWidth - 32)} />
         </div>
 
-        {/* Move Log */}
-        <div className="bg-gray-700 p-4 rounded w-60 h-[400px] overflow-y-auto">
+        {/* Move Log for Desktop */}
+        <div className="hidden md:block bg-gray-700 p-4 rounded w-60 h-[400px] overflow-y-auto mt-4 md:mt-0">
           <h2 className="text-lg font-semibold mb-2">Move Log</h2>
           <ol className="text-sm space-y-1 list-decimal list-inside">
             {moveLog.map((move, index) => (
@@ -151,24 +149,31 @@ export default function ChessBoard({ onGameOver }) {
 
       {/* Control Buttons */}
       <div className="flex gap-4 mt-4">
-        <button
-          onClick={resetGame}
-          className="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded"
-        >
+        <button onClick={resetGame} className="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded">
           ♻️ Reset
         </button>
-        <button
-          onClick={handleSignOut}
-          className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
-        >
+        <button onClick={handleSignOut} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">
           🔓 Sign Out
         </button>
+      </div>
+
+      {/* Move Log for Mobile */}
+      <div className="md:hidden bg-gray-700 p-4 rounded w-full max-w-md mt-4 overflow-y-auto">
+        <h2 className="text-lg font-semibold mb-2">Move Log</h2>
+        <ol className="text-sm space-y-1 list-decimal list-inside">
+          {moveLog.map((move, index) => (
+            <li key={index}>{move}</li>
+          ))}
+        </ol>
       </div>
 
       {/* Game Over Dialog */}
       {gameOverDialog && (
         <div className="bg-gray-800 text-white p-6 mt-8 rounded shadow-lg border border-gray-600">
-          <h2 className="text-xl font-bold">Game Over – {gameResult}</h2>
+          <h2 className="text-xl font-bold mb-4">Game Over – {gameResult}</h2>
+          <button onClick={downloadLog} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+            📄 Download Move Log
+          </button>
         </div>
       )}
     </div>
