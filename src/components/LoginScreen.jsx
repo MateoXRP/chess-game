@@ -1,24 +1,14 @@
 // src/components/LoginScreen.jsx
-import { useState, useEffect } from "react";
-import { signIn, auth } from "../firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { useState } from "react";
 import { useGame } from "../context/GameContext";
 
 export default function LoginScreen() {
   const { setPlayer } = useGame();
   const [name, setName] = useState("");
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (user && name) {
-        setPlayer({ uid: user.uid, name });
-      }
-    });
-    return () => unsub();
-  }, [name]);
-
-  const handleLogin = async () => {
-    await signIn();
+  const handleLogin = () => {
+    const uid = crypto.randomUUID(); // generate local unique ID
+    setPlayer({ uid, name });
   };
 
   return (
@@ -40,4 +30,3 @@ export default function LoginScreen() {
     </div>
   );
 }
-
