@@ -6,7 +6,7 @@ import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useGame } from "../context/GameContext";
 
-export default function ChessBoard() {
+export default function ChessBoard({ onGameOver }) {
   const [game, setGame] = useState(new Chess());
   const [fen, setFen] = useState(game.fen());
   const [moveLog, setMoveLog] = useState([]);
@@ -55,7 +55,7 @@ export default function ChessBoard() {
   };
 
   const handleSignOut = () => {
-    setPlayer(null); // Just clear local state, don't call Firebase signOut
+    setPlayer(null);
   };
 
   useEffect(() => {
@@ -85,6 +85,8 @@ export default function ChessBoard() {
     };
 
     await setDoc(ref, updated, { merge: true });
+
+    if (onGameOver) onGameOver();
   };
 
   const downloadLog = () => {
@@ -135,9 +137,9 @@ export default function ChessBoard() {
       {/* Game Over Dialog */}
       {gameOverDialog && (
         <div className="bg-gray-800 text-white p-6 mt-8 rounded shadow-lg border border-gray-600">
-          <h2 className="text-xl font-bold mb-2">Game Over</h2>
-          <p className="text-lg mb-2">{gameResult}</p>
-          <p className="mb-4">You can download your match log below.</p>
+          <h2 className="text-xl font-bold mb-4">
+            Game Over – {gameResult}
+          </h2>
           <button
             onClick={downloadLog}
             className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
