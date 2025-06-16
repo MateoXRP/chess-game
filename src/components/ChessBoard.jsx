@@ -26,7 +26,6 @@ export default function ChessBoard({ onGameOver }) {
   };
 
   const onDrop = async (sourceSquare, targetSquare) => {
-    // Ensure the player only moves as White
     if (game.turn() !== "w") return;
 
     const move = {
@@ -42,11 +41,14 @@ export default function ChessBoard({ onGameOver }) {
 
   const makeAIMove = async () => {
     if (game.turn() !== "b") return;
+
     const possibleMoves = game.moves({ verbose: true });
     if (game.isGameOver() || possibleMoves.length === 0) return;
 
+    const legalUCIMoves = possibleMoves.map((m) => m.from + m.to + (m.promotion || ""));
+
     for (let attempt = 1; attempt <= 3; attempt++) {
-      const moveUCI = await getBestMove(game.fen(), player.style || "balanced");
+      const moveUCI = await getBestMove(game.fen(), player.style || "balanced", legalUCIMoves);
       const from = moveUCI.slice(0, 2);
       const to = moveUCI.slice(2, 4);
       const promotion = moveUCI.length > 4 ? moveUCI[4] : undefined;
@@ -77,7 +79,6 @@ export default function ChessBoard({ onGameOver }) {
       }
     }
 
-    // Final fallback: pick a random legal move
     const fallback = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
     console.warn("Fallback to random legal move:", fallback.san);
     game.move(fallback);
