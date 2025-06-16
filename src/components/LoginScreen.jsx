@@ -3,30 +3,58 @@ import { useState } from "react";
 import { useGame } from "../context/GameContext";
 
 export default function LoginScreen() {
-  const { setPlayer } = useGame();
   const [name, setName] = useState("");
+  const { setPlayer, setAiEngine } = useGame();
 
-  const handleLogin = () => {
-    const uid = crypto.randomUUID(); // generate local unique ID
-    setPlayer({ uid, name });
+  const handleStart = () => {
+    if (!name.trim()) return;
+    setPlayer({ name, style: "balanced" }); // Only used by GPT-based logic
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
-      <h1 className="text-4xl mb-6">♟️ Chess Game</h1>
-      <input
-        className="p-2 mb-4 text-black rounded"
-        placeholder="Enter your name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <button
-        onClick={handleLogin}
-        disabled={!name}
-        className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-      >
-        Start Game
-      </button>
+    <div className="min-h-screen bg-gray-800 text-white flex flex-col items-center justify-center p-4">
+      <h1 className="text-3xl font-bold mb-6">♟️ Chess Game</h1>
+
+      <div className="bg-gray-700 p-6 rounded shadow-md w-full max-w-sm">
+        <label className="block mb-2 text-sm font-medium">Enter your name:</label>
+        <input
+          className="w-full p-2 rounded text-black mb-4"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Your name"
+        />
+
+        <label className="block mb-2 text-sm font-medium">Select AI Difficulty:</label>
+        <div className="flex gap-4 mb-4">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="ai"
+              value="gpt"
+              defaultChecked
+              onChange={() => setAiEngine("gpt")}
+            />
+            <span className="ml-2">🧠 Easy</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="ai"
+              value="stockfish"
+              onChange={() => setAiEngine("stockfish")}
+            />
+            <span className="ml-2">🔥 Hard</span>
+          </label>
+        </div>
+
+        <button
+          onClick={handleStart}
+          className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold"
+        >
+          Start Game
+        </button>
+      </div>
     </div>
   );
 }
