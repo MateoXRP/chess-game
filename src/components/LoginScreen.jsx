@@ -4,11 +4,13 @@ import { useGame } from "../context/GameContext";
 
 export default function LoginScreen() {
   const [name, setName] = useState("");
+  const [selectedAI, setSelectedAI] = useState("gpt");
   const { setPlayer, setAiEngine } = useGame();
 
   const handleStart = () => {
     if (!name.trim()) return;
-    setPlayer({ name, style: "balanced" }); // Only used by GPT-based logic
+    setPlayer({ name, style: "balanced" }); // Only used by GPT logic
+    setAiEngine(selectedAI); // ✅ Explicitly set AI engine based on selection
   };
 
   return (
@@ -32,8 +34,8 @@ export default function LoginScreen() {
               type="radio"
               name="ai"
               value="gpt"
-              defaultChecked
-              onChange={() => setAiEngine("gpt")}
+              checked={selectedAI === "gpt"}
+              onChange={() => setSelectedAI("gpt")}
             />
             <span className="ml-2">🧠 Easy</span>
           </label>
@@ -42,7 +44,8 @@ export default function LoginScreen() {
               type="radio"
               name="ai"
               value="stockfish"
-              onChange={() => setAiEngine("stockfish")}
+              checked={selectedAI === "stockfish"}
+              onChange={() => setSelectedAI("stockfish")}
             />
             <span className="ml-2">🔥 Hard</span>
           </label>

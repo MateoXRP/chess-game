@@ -5,7 +5,7 @@ const GameContext = createContext();
 
 export function GameProvider({ children }) {
   const [player, setPlayer] = useState(null);
-  const [aiEngine, setAiEngine] = useState("stockfish"); // "stockfish" = hard mode by default
+  const [aiEngine, setAiEngine] = useState("stockfish"); // Default to hard mode
 
   return (
     <GameContext.Provider value={{ player, setPlayer, aiEngine, setAiEngine }}>
