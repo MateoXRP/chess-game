@@ -5,8 +5,7 @@ import { Chessboard } from "react-chessboard";
 import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useGame } from "../context/GameContext";
-import { getBestMove } from "../utils/aiMove.js";
-import { getStockfishMove } from "../utils/stockfishMove.js";
+import { getStockfishMove } from "../utils/stockfishMove";
 
 export default function ChessBoard({ onGameOver }) {
   const [game, setGame] = useState(new Chess());
@@ -14,7 +13,7 @@ export default function ChessBoard({ onGameOver }) {
   const [moveLog, setMoveLog] = useState([]);
   const [gameOverDialog, setGameOverDialog] = useState(false);
   const [gameResult, setGameResult] = useState("");
-  const { player, setPlayer, aiEngine } = useGame();
+  const { player, setPlayer } = useGame();
 
   const makeMove = (move) => {
     const result = game.move(move);
@@ -28,15 +27,7 @@ export default function ChessBoard({ onGameOver }) {
 
   const onDrop = async (sourceSquare, targetSquare) => {
     if (game.turn() !== "w") return;
-
-    const piece = game.get(sourceSquare);
-    let move = { from: sourceSquare, to: targetSquare };
-
-    // Add promotion only if white pawn reaches rank 8
-    if (piece && piece.type === "p" && targetSquare[1] === "8") {
-      move.promotion = "q";
-    }
-
+    const move = { from: sourceSquare, to: targetSquare, promotion: "q" };
     const success = makeMove(move);
     if (success) {
       setTimeout(makeAIMove, 300);
@@ -48,15 +39,7 @@ export default function ChessBoard({ onGameOver }) {
     const possibleMoves = game.moves({ verbose: true });
     if (game.isGameOver() || possibleMoves.length === 0) return;
 
-    let moveUCI;
-
-    if (aiEngine === "stockfish") {
-      moveUCI = await getStockfishMove(game.fen());
-    } else {
-      const legalUCIMoves = possibleMoves.map((m) => m.from + m.to + (m.promotion || ""));
-      moveUCI = await getBestMove(game.fen(), player.style || "balanced", legalUCIMoves);
-    }
-
+    const moveUCI = await getStockfishMove(game.fen());
     const from = moveUCI.slice(0, 2);
     const to = moveUCI.slice(2, 4);
     const promotion = moveUCI.length > 4 ? moveUCI[4] : undefined;
@@ -122,6 +105,16 @@ export default function ChessBoard({ onGameOver }) {
     if (onGameOver) onGameOver();
   };
 
+  const downloadLog = () => {
+    const blob = new Blob([moveLog.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "chess_game_log.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="flex flex-col md:flex-row md:gap-8 items-center justify-center">
@@ -148,6 +141,15 @@ export default function ChessBoard({ onGameOver }) {
         </button>
       </div>
 
+      {gameOverDialog && (
+        <div className="bg-gray-800 text-white p-6 mt-8 rounded shadow-lg border border-gray-600">
+          <h2 className="text-xl font-bold mb-4">Game Over – {gameResult}</h2>
+          <button onClick={downloadLog} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+            📄 Download Move Log
+          </button>
+        </div>
+      )}
+
       <div className="md:hidden bg-gray-700 p-4 rounded w-full max-w-md mt-4 overflow-y-auto">
         <h2 className="text-lg font-semibold mb-2">Move Log</h2>
         <ol className="text-sm space-y-1 list-decimal list-inside">
@@ -156,12 +158,6 @@ export default function ChessBoard({ onGameOver }) {
           ))}
         </ol>
       </div>
-
-      {gameOverDialog && (
-        <div className="bg-gray-800 text-white p-6 mt-8 rounded shadow-lg border border-gray-600">
-          <h2 className="text-xl font-bold">Game Over – {gameResult}</h2>
-        </div>
-      )}
     </div>
   );
 }
