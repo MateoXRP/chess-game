@@ -154,6 +154,16 @@ export default function ChessBoard({ onGameOver }) {
         </button>
       </div>
 
+      {/* 👇 MOVE GAME OVER ABOVE LOG ON MOBILE */}
+      {gameOverDialog && (
+        <div className="bg-gray-800 text-white p-6 mt-4 rounded shadow-lg border border-gray-600">
+          <h2 className="text-xl font-bold mb-4">Game Over – {gameResult}</h2>
+          <button onClick={downloadLog} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+            📄 Download Move Log
+          </button>
+        </div>
+      )}
+
       <div className="md:hidden bg-gray-700 p-4 rounded w-full max-w-md mt-4 overflow-y-auto">
         <h2 className="text-lg font-semibold mb-2">Move Log</h2>
         <ol className="text-sm space-y-1 list-decimal list-inside">
@@ -162,15 +172,6 @@ export default function ChessBoard({ onGameOver }) {
           ))}
         </ol>
       </div>
-
-      {gameOverDialog && (
-        <div className="bg-gray-800 text-white p-6 mt-8 rounded shadow-lg border border-gray-600">
-          <h2 className="text-xl font-bold mb-4">Game Over – {gameResult}</h2>
-          <button onClick={downloadLog} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
-            📄 Download Move Log
-          </button>
-        </div>
-      )}
     </div>
   );
 }
